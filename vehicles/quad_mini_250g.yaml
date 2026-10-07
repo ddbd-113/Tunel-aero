@@ -1,0 +1,24 @@
+# Mini dron < 250 g (kategoria A1 / C0), śmigła 6", 2S 2250 mAh.
+# Bardzo wrażliwy na wiatr - dobry do testów granic odporności.
+type: multirotor
+name: "Mini 249 g"
+mass: 0.249
+inertia: [0.0005, 0.0005, 0.0009]
+rotors:
+  layout: quad_x
+  arm_length: 0.09
+  diameter: 0.152
+  ct0: 0.10
+  j0: 0.75
+  eta: 0.62
+  cp0: 0.008
+  kv: 1700
+  kv_efficiency: 0.8
+  motor_efficiency: 0.72
+  tau: 0.02
+  h_force_coeff: 0.0002
+battery: {cells: 2, capacity_ah: 2.25, r_cell: 0.015, mass: 0.08}
+drag: {area: [0.008, 0.008, 0.02], cd: 1.0}
+limits: {max_tilt_deg: 35, max_speed: 10, max_climb_rate: 2, max_descent_rate: 1.5}
+landing_gear: {half_width: 0.06, height: 0.04}
+crash: {max_vertical_speed: 2.5, max_horizontal_speed: 3.0}

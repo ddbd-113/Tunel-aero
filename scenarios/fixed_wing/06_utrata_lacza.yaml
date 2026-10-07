@@ -1,0 +1,24 @@
+name: "Samolot 3 kg - utrata łącza i powrót automatyczny"
+description: >
+  W 60 s zrywa się łącze RC/telemetrii (zasięg, zakłócenia). Failsafe: przerwanie
+  misji, powrót nad punkt startu i krążenie. Wiatr 7 m/s.
+seed: 26
+duration: 240
+vehicle: ../../vehicles/fixed_wing_3kg.yaml
+environment:
+  ground_elevation: 300
+  temperature_c: 9
+  wind: {speed: 7, direction: 330, terrain: farmland, turbulence: auto}
+mission:
+  airspeed: 17
+  start: {north: 0, east: 0, altitude: 120}
+  link_loss_action: rtl
+  waypoints:
+    - [1500, 0, 120]
+    - [1500, 1500, 140]
+    - [0, 1500, 120]
+failures:
+  - {type: link_loss, t: 60}
+criteria:
+  no_crash: true
+  min_altitude: 50

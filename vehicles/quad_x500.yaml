@@ -1,0 +1,37 @@
+# Quadrocopter klasy X500 (~2 kg), śmigła 10", silniki 920 KV, akumulator 4S 5000 mAh.
+# Czas zawisu ok. 15-17 min, stosunek ciągu do ciężaru ~2.8.
+type: multirotor
+name: "Quad X500"
+mass: 2.0                         # kg (z akumulatorem)
+inertia: [0.022, 0.022, 0.040]    # kg m^2 (Ixx, Iyy, Izz)
+rotors:
+  layout: quad_x                  # quad_x | quad_plus | hexa_x | octo_x | custom
+  arm_length: 0.25                # m - odległość osi silnika od środka masy
+  diameter: 0.254                 # m - średnica śmigła (10")
+  ct0: 0.10                       # współczynnik ciągu statycznego
+  j0: 0.75                        # posuw, przy którym ciąg spada do zera
+  eta: 0.75                       # sprawność indukowana śmigła (figure of merit)
+  cp0: 0.005                      # straty profilowe
+  kv: 920                         # obr/min na wolt
+  kv_efficiency: 0.72             # spadek obrotów pod obciążeniem
+  motor_efficiency: 0.82          # sprawność silnik + ESC
+  tau: 0.04                       # stała czasowa silnika [s]
+  h_force_coeff: 0.001            # opór wirnika w locie postępowym (siła H)
+  vortex_ring_state: true
+battery:
+  cells: 4
+  capacity_ah: 5.0
+  r_cell: 0.006                   # rezystancja wewnętrzna ogniwa [ohm]
+  mass: 0.55
+drag:
+  area: [0.04, 0.04, 0.09]        # powierzchnie odniesienia kadłuba x, y, z [m^2]
+  cd: 1.0
+limits:
+  max_tilt_deg: 35
+  max_speed: 12                   # m/s
+  max_climb_rate: 3
+  max_descent_rate: 2
+landing_gear: {half_width: 0.15, height: 0.12}
+crash:
+  max_vertical_speed: 3.0         # m/s - twardsze przyziemienie = uszkodzenie
+  max_horizontal_speed: 4.0

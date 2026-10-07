@@ -1,0 +1,34 @@
+name: "Quad X500 - porywisty wiatr w mieście"
+description: >
+  Wiatr 9 m/s (na 10 m) z południowego zachodu nad zabudową miejską - wysoka szorstkość
+  terenu daje silną turbulencję mechaniczną (model warstwy przyziemnej), do tego losowe
+  podmuchy 3-8 m/s. Typowe warunki inspekcji budynków przy przejściu frontu.
+seed: 7
+duration: 150
+vehicle: ../../vehicles/quad_x500.yaml
+environment:
+  ground_elevation: 210
+  temperature_c: 12
+  humidity: 0.75
+  wind:
+    speed: 9
+    direction: 240
+    terrain: city
+    turbulence: auto
+    random_gusts: {rate_per_min: 3, speed: [3, 8], duration: [1, 3], vertical: [-1.5, 1.5]}
+mission:
+  takeoff_altitude: 30
+  cruise_speed: 7
+  acceptance_radius: 2.0
+  waypoints:
+    - [60, 0, 30]
+    - [60, 80, 40]
+    - [0, 80, 40, 5]        # zawis 5 s - np. zdjęcie elewacji
+    - [0, 0, 30]
+  land: true
+criteria:
+  no_crash: true
+  mission_complete: true
+  max_track_error: 8.0
+  max_tilt_deg: 40
+  max_landing_error: 6.0

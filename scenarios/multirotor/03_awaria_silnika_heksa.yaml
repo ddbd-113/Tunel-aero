@@ -1,0 +1,25 @@
+name: "Hexa - awaria silnika w locie"
+description: >
+  Heksakopter 4.5 kg traci silnik nr 1 w 30 s lotu przy wietrze 6 m/s. Autopilot wykrywa
+  awarię po 0.4 s, realokuje ciąg na 5 sprawnych silników i wykonuje lądowanie awaryjne.
+  Test redundancji napędu.
+seed: 3
+duration: 120
+vehicle: ../../vehicles/hexa_x.yaml
+environment:
+  ground_elevation: 150
+  temperature_c: 18
+  wind: {speed: 6, direction: 300, terrain: farmland, turbulence: auto}
+mission:
+  takeoff_altitude: 25
+  cruise_speed: 6
+  waypoints:
+    - [80, 0, 25]
+    - [80, 80, 25]
+    - [0, 0, 25]
+  land: true
+failures:
+  - {type: motor, t: 30, motor: 1, efficiency: 0.0, detection_delay: 0.4}
+criteria:
+  no_crash: true
+  max_tilt_deg: 45

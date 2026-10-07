@@ -1,0 +1,30 @@
+name: "Quad X500 - utrata GPS (zagłuszanie)"
+description: >
+  Po 35 s lotu sygnał GNSS znika na 25 s (zagłuszanie / kanion miejski). Estymator
+  przechodzi na nawigację zliczeniową (IMU) - błąd pozycji narasta z biasem akcelerometrów
+  i błędem orientacji, a wiatr 7 m/s spycha drona. Po odzyskaniu sygnału estymata "skacze".
+seed: 6
+duration: 160
+vehicle: ../../vehicles/quad_x500.yaml
+environment:
+  ground_elevation: 120
+  temperature_c: 10
+  wind: {speed: 7, direction: 270, terrain: suburbs, turbulence: auto}
+sensors:
+  dead_reckoning: {accel_bias: 0.12}
+mission:
+  takeoff_altitude: 25
+  cruise_speed: 6
+  gps_loss_action: continue
+  waypoints:
+    - [120, 0, 25]
+    - [120, 120, 25]
+    - [0, 120, 25]
+    - [0, 0, 25]
+  land: true
+failures:
+  - {type: gps_loss, t: 35, duration: 25}
+criteria:
+  no_crash: true
+  mission_complete: true
+  max_track_error: 40       # rzeczywiste odejście od trasy podczas lotu "na ślepo"

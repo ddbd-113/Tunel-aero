@@ -1,0 +1,11 @@
+name: "Samolot 3 kg - przelot przez mikroburst (Monte Carlo)"
+# Losowa intensywność, rozmiar i położenie mikroburstu względem trasy oraz wysokość lotu.
+base_scenario: ../fixed_wing/02_mikroburst_nisko.yaml
+runs: 20
+seed: 2000
+randomize:
+  environment.wind.microbursts: 
+    - {north: {uniform: [600, 1200]}, east: {uniform: [-300, 300]}, radius: {uniform: [250, 700]},
+       max_outflow: {uniform: [6, 22]}, t_start: 0, ramp_time: 1}
+  mission.start.altitude: {uniform: [50, 150]}
+  environment.temperature_c: {uniform: [15, 35]}

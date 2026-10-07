@@ -1,0 +1,30 @@
+name: "Samolot 3 kg - przelot przez mikroburst na niskim pułapie"
+description: >
+  Klasyczny scenariusz uskoku wiatru: lot na 80 m wprost przez mikroburst
+  (wypływ przy ziemi 14 m/s, promień 400 m, prąd zstępujący ~7 m/s na 80 m). Najpierw rośnie wiatr czołowy (wzrost IAS),
+  potem silny prąd zstępujący i wiatr w ogon (spadek IAS i wysokości).
+seed: 22
+duration: 150
+vehicle: ../../vehicles/fixed_wing_3kg.yaml
+environment:
+  ground_elevation: 120
+  temperature_c: 28
+  humidity: 0.7
+  wind:
+    speed: 3
+    direction: 180
+    terrain: open
+    turbulence: moderate
+    microbursts:
+      - {north: 900, east: 0, radius: 400, max_outflow: 14, z_star: 200, eps: 30, t_start: 0, ramp_time: 1}
+mission:
+  airspeed: 17
+  start: {north: 0, east: 0, altitude: 80}
+  max_climb_rate: 4
+  waypoints:
+    - [1800, 0, 80]
+    - [1800, 300, 80]
+criteria:
+  no_crash: true
+  min_altitude: 25
+  max_stall_time: 0.5

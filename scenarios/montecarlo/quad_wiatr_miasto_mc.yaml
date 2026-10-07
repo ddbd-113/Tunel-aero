@@ -1,0 +1,17 @@
+name: "Quad X500 - odporność na wiatr w mieście (Monte Carlo)"
+# Bazowy scenariusz + losowanie warunków. Odpowiada na pytanie:
+# "przy jakim wietrze / turbulencji / masie dron przestaje spełniać wymagania?"
+base_scenario: ../multirotor/02_wiatr_porywisty_miasto.yaml
+runs: 24
+seed: 1000
+randomize:
+  environment.wind.speed: {uniform: [2, 14]}           # m/s (prognoza, 10 m)
+  environment.wind.direction: {uniform: [0, 360]}
+  environment.temperature_c: {normal: [10, 10], min: -20, max: 35}
+  environment.wind.terrain: {choice: [suburbs, city]}
+  vehicle_overrides.mass: {uniform: [1.9, 2.5]}        # z ładunkiem / bez
+random_failures:
+  - probability: 0.15
+    failure: {type: gps_degraded, t: {uniform: [20, 60]}, duration: {uniform: [10, 30]}, sigma_factor: 4}
+  - probability: 0.10
+    failure: {type: mag_interference, t: {uniform: [20, 60]}, duration: {uniform: [5, 20]}, heading_error_deg: 25}

@@ -1,0 +1,29 @@
+name: "Quad X500 - marznąca mgła (oblodzenie śmigieł)"
+description: >
+  Przechłodzona mgła -4 C (LWC 0.4 g/m^3) do 150 m. Lód narasta na łopatach śmigieł,
+  ciąg i sprawność spadają, rośnie pobór mocy. Scenariusz pokazuje, po jakim czasie
+  dron traci zapas ciągu - test oczekuje porażki (expect_pass: false).
+seed: 9
+duration: 420
+expect_pass: false
+vehicle: ../../vehicles/quad_x500.yaml
+environment:
+  ground_elevation: 300
+  temperature_c: -4
+  humidity: 1.0
+  wind: {speed: 3, direction: 0, terrain: open, turbulence: auto}
+  icing: {lwc: 0.4, cloud_base: 0, cloud_top: 150}
+mission:
+  takeoff_altitude: 30
+  cruise_speed: 5
+  waypoints:
+    - [100, 0, 30, 60]
+    - [100, 100, 30, 60]
+    - [0, 100, 30, 60]
+    - [0, 0, 30, 60]
+  land: true
+criteria:
+  no_crash: true
+  mission_complete: true
+  min_altitude: 10
+  max_saturation_time: 2.0

@@ -1,0 +1,35 @@
+name: "Quad X500 - burza: ulewa, mikroburst, silna turbulencja"
+description: >
+  Komórka burzowa: ulewa 40 mm/h, silna turbulencja, wiatr 8 m/s i przesuwający się
+  mikroburst (wypływ przy ziemi do 12 m/s, prąd zstępujący w osi) przecinający trasę.
+  Ciśnienie spada o 3 hPa/h (błąd wysokości barometrycznej).
+seed: 8
+duration: 150
+vehicle: ../../vehicles/quad_x500.yaml
+environment:
+  ground_elevation: 200
+  temperature_c: 22
+  humidity: 0.95
+  pressure_tendency_hpa_h: -3
+  rain_mm_h: 40
+  wind:
+    speed: 8
+    direction: 200
+    terrain: farmland
+    turbulence: severe
+    microbursts:
+      - {north: 120, east: -80, radius: 300, max_outflow: 12, t_start: 15, ramp_time: 30,
+         drift_north: 0, drift_east: 2.0}
+mission:
+  takeoff_altitude: 30
+  cruise_speed: 8
+  waypoints:
+    - [150, 0, 30]
+    - [150, 100, 30]
+    - [0, 0, 30]
+  land: true
+criteria:
+  no_crash: true
+  min_altitude: 10
+  max_tilt_deg: 40
+  max_landing_error: 8

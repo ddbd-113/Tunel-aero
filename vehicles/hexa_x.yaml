@@ -1,0 +1,24 @@
+# Heksakopter klasy przemysłowej (~4.5 kg), śmigła 13", 6S 10 Ah.
+# Redundancja napędu - po awarii jednego silnika może bezpiecznie wylądować.
+type: multirotor
+name: "Hexa X 4.5 kg"
+mass: 4.5
+inertia: [0.08, 0.08, 0.14]
+rotors:
+  layout: hexa_x
+  arm_length: 0.40
+  diameter: 0.33
+  ct0: 0.10
+  j0: 0.75
+  eta: 0.75
+  cp0: 0.005
+  kv: 400
+  kv_efficiency: 0.8
+  motor_efficiency: 0.84
+  tau: 0.06
+  h_force_coeff: 0.0015
+battery: {cells: 6, capacity_ah: 10.0, r_cell: 0.004, mass: 1.3}
+drag: {area: [0.08, 0.08, 0.20], cd: 1.0}
+limits: {max_tilt_deg: 30, max_speed: 12, max_climb_rate: 3, max_descent_rate: 2}
+landing_gear: {half_width: 0.22, height: 0.20}
+crash: {max_vertical_speed: 3.0, max_horizontal_speed: 4.0}

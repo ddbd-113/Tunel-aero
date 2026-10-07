@@ -1,0 +1,27 @@
+name: "Quad X500 - lot referencyjny w spokojnym powietrzu"
+description: >
+  Punkt odniesienia: ISA, brak wiatru, standardowe czujniki. Start, trasa kwadratowa
+  na 20 m, lądowanie w ostatnim punkcie. Inne scenariusze porównuj z tym wynikiem.
+seed: 1
+duration: 120
+vehicle: ../../vehicles/quad_x500.yaml
+environment:
+  ground_elevation: 100
+  temperature_c: 15
+  qnh_hpa: 1013.25
+  humidity: 0.5
+mission:
+  takeoff_altitude: 20
+  cruise_speed: 8
+  waypoints:
+    - [50, 0, 20]
+    - [50, 50, 20]
+    - [0, 50, 20]
+    - [0, 0, 20]
+  land: true
+criteria:
+  no_crash: true
+  mission_complete: true
+  max_track_error: 4.0      # zwykły GPS (bez RTK) ma błąd rzędu 1-2 m
+  max_landing_error: 2.0
+  min_battery_soc: 0.8

@@ -1,0 +1,31 @@
+name: "Samolot 3 kg - oblodzenie w chmurze, bez podgrzewania Pitota"
+description: >
+  Lot w chmurze warstwowej (-7 C, LWC 0.5 g/m^3) między 150 a 600 m. Lód narasta na
+  krawędziach natarcia: rośnie opór, maleje siła nośna i kąt krytyczny. Po silnym
+  oblodzeniu zamarza nieogrzewana rurka Pitota - wskazanie prędkości spada do zera.
+  Scenariusz pokazuje łańcuch zdarzeń prowadzący do utraty kontroli (oczekiwana porażka).
+seed: 23
+duration: 600
+expect_pass: false
+vehicle: ../../vehicles/fixed_wing_3kg.yaml
+environment:
+  ground_elevation: 400
+  temperature_c: -5
+  humidity: 1.0
+  wind: {speed: 6, direction: 300, terrain: farmland, turbulence: light}
+  icing: {lwc: 0.5, cloud_base: 150, cloud_top: 600, deicing: false}
+sensors:
+  airspeed: {heater: false}
+mission:
+  airspeed: 17
+  start: {north: 0, east: 0, altitude: 250}
+  return_home: true
+  waypoints:
+    - [1500, 0, 250]
+    - [1500, 1000, 250]
+    - [0, 1000, 250]
+    - [0, 0, 250]
+criteria:
+  no_crash: true
+  mission_complete: true
+  max_stall_time: 0

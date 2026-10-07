@@ -1,0 +1,58 @@
+# Bezzałogowy samolot klasy 3 kg (rozpiętość 2 m), napęd elektryczny 4S 5000 mAh.
+# Prędkość przelotowa 17 m/s, przeciągnięcie ~9.7 m/s, doskonałość ~9.
+type: fixed_wing
+name: "UAV 3 kg (2 m)"
+mass: 3.0
+inertia: [0.30, 0.20, 0.45, 0.01]   # Ixx, Iyy, Izz, Ixz [kg m^2]
+cruise_speed: 17
+geometry:
+  wing_area: 0.44     # m^2
+  span: 2.0           # m
+  chord: 0.22         # m
+aero:                 # pochodne stateczności (1/rad); konwencja: dodatnia lotka -> przechylenie w prawo,
+  CL0: 0.25           # dodatni ster wysokości -> pochylenie w dół, dodatni ster kierunku -> odchylenie w lewo
+  CLa: 4.8
+  CLq: 4.0
+  CLde: 0.30
+  CD0: 0.035
+  e: 0.8
+  Cm0: 0.02
+  Cma: -0.70
+  Cmq: -12.0
+  Cmde: -1.0
+  CYb: -0.40
+  CYr: 0.10
+  CYdr: 0.15
+  Clb: -0.08
+  Clp: -0.50
+  Clr: 0.12
+  Clda: 0.20
+  Cldr: 0.005
+  Cnb: 0.08
+  Cnp: -0.05
+  Cnr: -0.15
+  Cnda: -0.01
+  Cndr: -0.06
+  alpha_stall_deg: 15.0
+  stall_blend: 40.0
+  post_stall_cl: 1.0
+  cd90: 1.3
+  stall_roll_asymmetry: 0.015     # opadanie skrzydła przy przeciągnięciu
+propulsion:
+  position: [0.4, 0.0, 0.0]
+  diameter: 0.28      # 11"
+  ct0: 0.11
+  j0: 0.85
+  eta: 0.85
+  cp0: 0.005
+  kv: 700
+  kv_efficiency: 0.85
+  motor_efficiency: 0.82
+  tau: 0.08
+battery: {cells: 4, capacity_ah: 5.0, r_cell: 0.006, mass: 0.5}
+servos: {limit_deg: 25, tau: 0.04, rate_deg_s: 300}
+limits:
+  vne: 35             # prędkość nieprzekraczalna [m/s]
+  max_load_factor: 4.0
+crash:
+  ground_contact_is_crash: true   # brak podwozia - kontakt z ziemią w locie = rozbicie

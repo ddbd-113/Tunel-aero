@@ -1,0 +1,28 @@
+name: "Quad X500 - spoofing GPS (fałszywy sygnał)"
+description: >
+  Od 30 s fałszywy sygnał GNSS powoli przesuwa raportowaną pozycję (0.4 m/s na północ).
+  Autopilot "widzi" idealne śledzenie trasy, a w rzeczywistości dron dryfuje na południe.
+  Metryka track_error liczona jest z PRAWDZIWEJ pozycji - test oczekuje porażki.
+seed: 11
+duration: 140
+expect_pass: false
+vehicle: ../../vehicles/quad_x500.yaml
+environment:
+  ground_elevation: 100
+  temperature_c: 15
+  wind: {speed: 4, direction: 90, terrain: open, turbulence: auto}
+mission:
+  takeoff_altitude: 30
+  cruise_speed: 5
+  waypoints:
+    - [100, 0, 30]
+    - [100, 100, 30]
+    - [0, 100, 30]
+    - [0, 0, 30]
+  land: true
+failures:
+  - {type: gps_spoofing, t: 30, drift_north: 0.4, drift_east: 0.0}
+criteria:
+  no_crash: true
+  max_track_error: 5.0
+  max_landing_error: 5.0

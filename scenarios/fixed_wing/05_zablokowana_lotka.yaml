@@ -1,0 +1,27 @@
+name: "Samolot 3 kg - zablokowana lotka, rekonfiguracja na ster kierunku"
+description: >
+  W 40 s lotka zacina się w położeniu +3 deg (moment przechylający w prawo). Autopilot
+  wykrywa awarię po 1.5 s i przechodzi na sterowanie przechyleniem sterem kierunku
+  (ślizg + wznios skrzydeł). Test tolerancji uszkodzeń sterowania.
+seed: 25
+duration: 240
+vehicle: ../../vehicles/fixed_wing_3kg.yaml
+environment:
+  ground_elevation: 150
+  temperature_c: 14
+  wind: {speed: 4, direction: 200, terrain: open, turbulence: light}
+mission:
+  airspeed: 18
+  start: {north: 0, east: 0, altitude: 120}
+  loiter_radius: 120
+  return_home: true
+  waypoints:
+    - [800, 0, 120]
+    - [800, 600, 120]
+    - [0, 0, 120]
+failures:
+  - {type: control_surface, t: 40, surface: aileron, position_deg: 3.0, detection_delay: 1.5}
+criteria:
+  no_crash: true
+  mission_complete: true
+  min_altitude: 60

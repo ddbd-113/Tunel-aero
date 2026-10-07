@@ -1,0 +1,33 @@
+name: "Quad X500 - mróz -15 C, zimny akumulator"
+description: >
+  Zimowy lot nad zaśnieżonym terenem: -15 C, wiatr 6 m/s. Akumulator nie był podgrzany
+  (ma temperaturę otoczenia) i jest częściowo rozładowany (60%). W niskiej temperaturze
+  rośnie rezystancja wewnętrzna i spada dostępna pojemność - napięcie mocno siada pod
+  obciążeniem. Oczekiwany failsafe: powrót (RTL) przy niskim stanie baterii.
+seed: 4
+duration: 480
+vehicle: ../../vehicles/quad_x500.yaml
+vehicle_overrides:
+  battery: {soc: 0.6}
+environment:
+  ground_elevation: 900
+  temperature_c: -15
+  humidity: 0.85
+  wind: {speed: 6, direction: 20, terrain: snow, turbulence: auto}
+mission:
+  takeoff_altitude: 40
+  cruise_speed: 8
+  low_battery_soc: 0.25
+  low_battery_action: rtl
+  return_home: true
+  waypoints:
+    - [150, 0, 40]
+    - [150, 150, 40]
+    - [-150, 150, 40]
+    - [-150, -150, 40]
+    - [150, -150, 40]
+    - [150, 0, 40]
+criteria:
+  no_crash: true
+  min_voltage: 13.0
+  max_landing_error: 5.0

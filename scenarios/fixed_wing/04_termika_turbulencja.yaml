@@ -1,0 +1,35 @@
+name: "Samolot 3 kg - letnie popołudnie: termika i turbulencja"
+description: >
+  Upał (+31 C), konwekcja: kominy termiczne 3-4 m/s z opadaniem wokół, umiarkowana
+  turbulencja. Test utrzymania wysokości i prędkości oraz obciążeń konstrukcji.
+seed: 24
+duration: 240
+vehicle: ../../vehicles/fixed_wing_3kg.yaml
+environment:
+  ground_elevation: 250
+  temperature_c: 31
+  humidity: 0.4
+  wind:
+    speed: 4
+    direction: 270
+    terrain: farmland
+    turbulence: moderate
+    thermals:
+      - {north: 300, east: 20, radius: 90, core_updraft: 4.0, top: 1500}
+      - {north: 600, east: 350, radius: 70, core_updraft: 3.0, top: 1500}
+      - {north: 200, east: 480, radius: 110, core_updraft: 3.5, top: 1500}
+mission:
+  airspeed: 17
+  start: {north: 0, east: 0, altitude: 150}
+  return_home: true
+  waypoints:
+    - [700, 0, 150]
+    - [700, 500, 150]
+    - [0, 500, 150]
+    - [0, 0, 150]
+criteria:
+  no_crash: true
+  mission_complete: true
+  max_altitude_error: 25
+  max_load_factor: 3.0
+  min_airspeed: 11

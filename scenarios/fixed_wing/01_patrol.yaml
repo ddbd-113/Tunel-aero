@@ -1,0 +1,28 @@
+name: "Samolot 3 kg - patrol po trasie, lekki wiatr"
+description: >
+  Lot referencyjny: 4 odcinki trasy na 100-120 m, wiatr 4 m/s z lekką turbulencją,
+  powrót i krążenie nad punktem startu.
+seed: 21
+duration: 240
+vehicle: ../../vehicles/fixed_wing_3kg.yaml
+environment:
+  ground_elevation: 180
+  temperature_c: 16
+  humidity: 0.6
+  wind: {speed: 4, direction: 250, terrain: farmland, turbulence: light}
+mission:
+  airspeed: 17
+  start: {north: 0, east: 0, altitude: 100}
+  loiter_radius: 70
+  return_home: true
+  waypoints:
+    - [600, 0, 100]
+    - [600, 500, 120]
+    - [0, 500, 120]
+    - [0, 0, 100]
+criteria:
+  no_crash: true
+  mission_complete: true
+  p95_track_error: 30
+  min_airspeed: 12
+  max_stall_time: 0

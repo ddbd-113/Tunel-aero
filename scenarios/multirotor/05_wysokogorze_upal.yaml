@@ -1,0 +1,28 @@
+name: "Quad X500 + ładunek - wysokogórze w upale"
+description: >
+  Start z wysokości 4000 m n.p.m. przy +18 C (odchyłka od ISA +29 K), dron z ładunkiem
+  0.6 kg. Wysokość gęstościowa ~4600 m - śmigła wytwarzają ~37% mniej ciągu, zapas mocy
+  jest minimalny. Test nasycenia silników przy manewrach i w podmuchach.
+seed: 5
+duration: 150
+vehicle: ../../vehicles/quad_x500.yaml
+vehicle_overrides:
+  mass: 2.6
+environment:
+  ground_elevation: 4000
+  temperature_c: 18
+  qnh_hpa: 1016
+  humidity: 0.2
+  wind: {speed: 5, direction: 90, terrain: open, turbulence: auto}
+mission:
+  takeoff_altitude: 30
+  cruise_speed: 10
+  waypoints:
+    - [100, 0, 50]
+    - [100, 100, 50]
+    - [0, 0, 30]
+  land: true
+criteria:
+  no_crash: true
+  mission_complete: true
+  max_saturation_time: 3.0
