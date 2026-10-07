@@ -109,7 +109,7 @@ def trim_fixed_wing(veh, airspeed: float, rho: float = 1.225, gamma: float = 0.0
     F, _, p_elec = props.forces(v_b, np.zeros(3), rho, 100.0)
     props.n[:] = saved
     return Trim(airspeed, float(alpha), float(de), float(thr), float(F[0]), float(p_elec), float(n),
-                bool(ok and abs(de) < veh.servo_limit and alpha < math.radians(veh.aero["alpha_stall_deg"])))
+                bool(ok and abs(de) < veh.servo_limit[1] and alpha < math.radians(veh.aero["alpha_stall_deg"])))
 
 
 def fixed_wing_controller_model(veh, airspeed: float, rho: float = 1.225, deg=None) -> dict:
@@ -210,22 +210,18 @@ def multirotor_forward_power(veh, speeds=None, rho=1.225) -> dict:
 
 
 # ============================================================ raport
-def write_tunnel_report(vehicle_cfg: dict, out_dir, cruise_speed: float | None = None):
-    """Generuje raport HTML z charakterystykami pojazdu (wirtualny tunel + osiągi)."""
+def tunnel_figures(vehicle_cfg: dict, cruise_speed: float | None = None) -> tuple[list, list, object]:
+    """Charakterystyki pojazdu: (lista faktów, obrazy PNG w base64, pojazd)."""
     import base64
-    import html as _html
     import io
-    from pathlib import Path
 
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    from .report import CSS
-    from .vehicles import build_vehicle
+    from .vehicles import build_vehicle, resolve_vehicle_config
 
-    out = Path(out_dir)
-    out.mkdir(parents=True, exist_ok=True)
+    vehicle_cfg = resolve_vehicle_config(vehicle_cfg)
     veh = build_vehicle(vehicle_cfg, np.random.default_rng(0))
     imgs, facts = [], []
 
@@ -332,6 +328,19 @@ def write_tunnel_report(vehicle_cfg: dict, out_dir, cruise_speed: float | None =
              f"{multirotor_endurance(veh, temperature_c=-10, temperature_offset=-25):.1f} min"),
             ("ciąg / ciężar na 3000 m, +25 C", f"{multirotor_hover(veh, 3000, 25 - (15 - 19.5))['thrust_to_weight']:.2f}"),
         ]
+    return facts, imgs, veh
+
+
+def write_tunnel_report(vehicle_cfg: dict, out_dir, cruise_speed: float | None = None):
+    """Generuje raport HTML z charakterystykami pojazdu (wirtualny tunel + osiągi)."""
+    import html as _html
+    from pathlib import Path
+
+    from .report import CSS
+
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    facts, imgs, veh = tunnel_figures(vehicle_cfg, cruise_speed)
     doc = f"""<!doctype html><html lang="pl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Tunel - {_html.escape(veh.name)}</title>
 <style>{CSS}</style></head><body><main><h1>Wirtualny tunel aerodynamiczny: {_html.escape(veh.name)}</h1>

@@ -17,7 +17,7 @@ from .failures import FailureManager
 from .metrics import compute_metrics, evaluate_criteria
 from .sensors import NavigationSystem
 from .sim import FlightLog, Simulation
-from .vehicles import build_vehicle
+from .vehicles import build_vehicle, resolve_vehicle_config
 from .weather import Weather
 from .wind import (TERRAIN_ROUGHNESS, DiscreteGust, DrydenTurbulence, Microburst, Thermal, WindField,
                    WindProfile)
@@ -69,10 +69,23 @@ def load_scenario(path_or_dict, overrides: dict | None = None) -> tuple[dict, Pa
         parent, pbase = load_scenario(_resolve_path(sc.pop("extends"), base))
         sc = deep_merge(parent, sc)
     for k, v in (overrides or {}).items():
+        if v is None:   # None usuwa klucz (np. mission.airspeed -> prędkość przelotowa pojazdu)
+            parent = sc
+            parts_ = k.split(".")
+            for p_ in parts_[:-1]:
+                parent = parent.get(p_, {}) if isinstance(parent, dict) else {}
+            if isinstance(parent, dict):
+                parent.pop(parts_[-1], None)
+            continue
         set_dotted(sc, k, v)
     veh = sc.get("vehicle", {})
     if isinstance(veh, str):
-        veh = load_yaml(_resolve_path(veh, base))
+        vpath = _resolve_path(veh, base)
+        veh = load_yaml(vpath)
+        veh.setdefault("_base_dir", str(vpath.resolve().parent))
+    elif isinstance(veh, dict):
+        veh = dict(veh)
+        veh.setdefault("_base_dir", str(base))
     sc["vehicle"] = deep_merge(veh, sc.get("vehicle_overrides", {}))
     return sc, base
 
@@ -134,7 +147,8 @@ def build_simulation(sc: dict, seed: int | None = None) -> tuple[Simulation, dic
     rng = np.random.default_rng(seed)
     duration = float(sc.get("duration", 120.0))
     env = build_environment(sc.get("environment", {}) or {}, rng, duration)
-    vcfg = sc["vehicle"]
+    vcfg = resolve_vehicle_config(sc["vehicle"])
+    sc["vehicle"] = vcfg
     veh = build_vehicle(vcfg, rng)
     batt_t = (vcfg.get("battery", {}) or {}).get("temperature_c")
     ground = env.atmosphere.at(env.ground_elevation)

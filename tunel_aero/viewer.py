@@ -46,6 +46,7 @@ def write_replay(result, path) -> Path:
         wps.append([w["north"], w["east"], w["alt"]] if isinstance(w, dict) else [w[0], w[1], w[2]])
     data = {
         "name": result.name,
+        "vehicle": result.log.meta.get("vehicle", ""),
         "kind": result.log.meta.get("vehicle_kind", "multirotor"),
         "passed": result.passed,
         "end": result.log.meta.get("end_reason", ""),
@@ -59,6 +60,10 @@ def write_replay(result, path) -> Path:
                      for th in wind.get("thermals", [])],
         "icing": (sc.get("environment", {}) or {}).get("icing"),
     }
+    vis = (sc.get("vehicle") or {}).get("_visual") if isinstance(sc.get("vehicle"), dict) else None
+    if vis is not None:   # siatka z CAD (układ ciała FRD, metry, względem środka ciężkości)
+        data["mesh"] = {"v": [round(float(x), 4) for x in np.asarray(vis["v"]).reshape(-1)],
+                        "f": [int(i) for i in np.asarray(vis["f"]).reshape(-1)]}
     html = TEMPLATE.replace("__DATA__", json.dumps(data, ensure_ascii=False, separators=(",", ":")))
     html = html.replace("__TITLE__", result.name.replace("<", ""))
     p = Path(path)
@@ -109,7 +114,7 @@ label{color:var(--muted);user-select:none}
 <script>
 const D = __DATA__;
 const F = D.frames, N = F.t.length, T_END = F.t[N-1];
-document.getElementById('title').innerHTML = D.name + ' <span class="badge ' + (D.passed?'pass':'fail') + '">' + (D.passed?'PASS':'FAIL') + '</span>';
+document.getElementById('title').innerHTML = D.name + ' <span class="badge ' + (D.passed?'pass':'fail') + '">' + (D.passed?'PASS':'FAIL') + '</span>' + (D.vehicle ? '<div style="font-weight:400;color:#9aa4b1;font-size:12px">' + D.vehicle + '</div>' : '');
 if (typeof THREE === 'undefined') { document.getElementById('err').style.display='flex'; throw new Error('three.js'); }
 
 // ---------- scena
@@ -180,7 +185,15 @@ if (D.icing && D.icing.lwc > 0) {
 const veh = new THREE.Group();
 const mat = (c)=>new THREE.MeshLambertMaterial({color:c});
 function box(sx, sy, sz, x, y, z, c){ const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz), mat(c)); m.position.set(x,y,z); veh.add(m); return m; }
-if (D.kind === 'fixed_wing') {
+if (D.mesh) {                                         // model z CAD
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(D.mesh.v, 3));
+  g.setIndex(D.mesh.f);
+  g.computeVertexNormals();
+  veh.add(new THREE.Mesh(g, new THREE.MeshLambertMaterial({color:0xeef1f5, side:THREE.DoubleSide})));
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(g, 35), new THREE.LineBasicMaterial({color:0x5a6472}));
+  veh.add(edges);
+} else if (D.kind === 'fixed_wing') {
   box(1.2, 0.14, 0.14, 0, 0, 0, 0xf2f2f2);           // kadłub
   box(0.22, 2.0, 0.03, 0.05, 0, -0.03, 0xe8e8e8);     // skrzydło
   box(0.1, 0.4, 0.02, 0.05, 0.85, -0.03, 0xff3b30);   // końcówka prawa (czerwona)
@@ -205,9 +218,10 @@ scene.add(windArrow);
 
 // kamera startowa: za pojazdem (tryb śledzenia); przycisk "cały lot" pokazuje całą trasę
 const SC0 = Math.max(1, span/120);
+const RAD = new THREE.Box3().setFromObject(veh).getBoundingSphere(new THREE.Sphere()).radius || 1;
 function chaseView(){
   const yaw = Math.atan2(F.e[Math.min(5,N-1)]-F.e[0], F.n[Math.min(5,N-1)]-F.n[0]) || 0;
-  const d = 22*SC0;
+  const d = 9*RAD*SC0 + 3;
   camera.position.copy(P(F.n[0] - d*Math.cos(yaw), F.e[0] - d*Math.sin(yaw), F.h[0] + 0.45*d + 2));
   controls.target.copy(P(F.n[0], F.e[0], F.h[0]));
 }

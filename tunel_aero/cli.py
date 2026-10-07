@@ -4,6 +4,8 @@
   suite [KATALOG...]    - zestaw scenariuszy (test regresyjny), tabela PASS/FAIL
   montecarlo KONFIG     - wiele lotów z losowymi warunkami
   tunnel POJAZD         - wirtualny tunel aerodynamiczny i analiza osiągów
+  cad AIRCRAFT.yaml     - własny samolot z CAD: raport projektowy (CG, stateczność, trym) + model
+  web                   - aplikacja w przeglądarce (to samo co na GitHub Pages)
   list [KATALOG]        - lista dostępnych scenariuszy
 """
 from __future__ import annotations
@@ -24,6 +26,19 @@ from .scenario import PACKAGE_ROOT, load_yaml, run_scenario
 def slug(s: str) -> str:
     s = unicodedata.normalize("NFKD", s.replace("ł", "l").replace("Ł", "L")).encode("ascii", "ignore").decode()
     return re.sub(r"[^a-zA-Z0-9]+", "_", s).strip("_").lower()[:60] or "wynik"
+
+
+def _vehicle_override(path: str) -> dict:
+    """Podmiana pojazdu w scenariuszu (np. własny samolot z CAD) - prędkość z konfiguracji pojazdu."""
+    p = Path(path).resolve()
+    if not p.exists():
+        raise SystemExit(f"Nie znaleziono pliku pojazdu: {path}")
+    return {"vehicle": str(p), "vehicle_overrides": {}, "mission.airspeed": None}
+
+
+def _vehicle_kind(path: str) -> str:
+    cfg = load_yaml(path)
+    return "fixed_wing" if cfg.get("type") in ("fixed_wing", "cad_aircraft", "aircraft") else cfg.get("type", "multirotor")
 
 
 def _parse_set(items: list[str] | None) -> dict:
@@ -73,6 +88,8 @@ def cmd_run(a):
         overrides["duration"] = a.duration
     if a.perfect_nav:
         overrides["navigation"] = "perfect"
+    if a.vehicle:
+        overrides.update(_vehicle_override(a.vehicle))
     t0 = time.time()
     r = run_scenario(sc_path, seed=a.seed, overrides=overrides, progress=not a.quiet)
     _print_result(r, verbose=not a.quiet)
@@ -89,8 +106,8 @@ def cmd_run(a):
 
 
 def _suite_job(args):
-    path, seed = args
-    r = run_scenario(path, seed=seed)
+    path, seed, vehicle = args
+    r = run_scenario(path, seed=seed, overrides=_vehicle_override(vehicle) if vehicle else None)
     return {"path": str(path), "name": r.name, "passed": r.passed, "expect": r.scenario.get("expect_pass", True),
             "end": r.log.meta.get("end_reason", ""), "failed": [c["name"] for c in r.criteria if not c["passed"]],
             "time": r.metrics["flight_time"]}
@@ -98,9 +115,20 @@ def _suite_job(args):
 
 def cmd_suite(a):
     files = _find_scenarios(a.paths)
+    if a.vehicle:   # tylko scenariusze dla tego samego typu pojazdu
+        kind = _vehicle_kind(a.vehicle)
+        keep = []
+        for f in files:
+            sc = load_yaml(f)
+            v = sc.get("vehicle")
+            vk = _vehicle_kind(str((f.parent / v).resolve())) if isinstance(v, str) else (v or {}).get("type")
+            if vk == kind:
+                keep.append(f)
+        print(f"Pojazd: {a.vehicle} ({kind}) - pominięto {len(files) - len(keep)} scenariuszy innego typu")
+        files = keep
     print(f"Zestaw testów: {len(files)} scenariuszy")
     t0 = time.time()
-    jobs = [(f, a.seed) for f in files]
+    jobs = [(f, a.seed, a.vehicle) for f in files]
     if a.jobs and a.jobs > 1:
         with ProcessPoolExecutor(max_workers=a.jobs) as ex:
             res = list(ex.map(_suite_job, jobs))
@@ -145,6 +173,33 @@ def cmd_tunnel(a):
     return 0
 
 
+def cmd_cad(a):
+    from .cad.report import write_design_report
+    out = Path(a.out) if a.out else Path("wyniki") / ("projekt_" + slug(Path(a.aircraft).resolve().parent.name
+                                                                       + "_" + Path(a.aircraft).stem))
+    res = write_design_report(a.aircraft, out)
+    d = res["design"]
+    print(f"\n  {d['name']}")
+    print(f"  masa {d['mass']:.3f} kg, rozpiętość {d['b'] * 1000:.0f} mm, S = {d['S'] * 100:.1f} dm², MAC = {d['mac'] * 1000:.0f} mm")
+    print(f"  środek ciężkości: {d['cg_pct_mac'] * 100:.0f}% MAC, punkt neutralny: {d['np_pct_mac'] * 100:.0f}% MAC, "
+          f"zapas stateczności: {d['static_margin'] * 100:.1f}%")
+    print(f"  przeciągnięcie {d['v_stall']:.1f} m/s, przelot {d['cruise_speed']:.1f} m/s, CD0 = {d['CD0']:.4f}")
+    for lvl, msg in d["checks"]:
+        print(f"    [{ {'error': 'BŁĄD', 'warn': 'UWAGA', 'info': 'info', 'ok': 'OK'}[lvl] }] {msg}")
+    print(f"\n  raport projektu:  {res['report']}")
+    print(f"  model dla symulatora: {res['vehicle']}")
+    return 1 if any(lvl == "error" for lvl, _ in d["checks"]) else 0
+
+
+def cmd_web(a):
+    from .webapp import build_site, serve
+    out = build_site(a.out)
+    print(f"  aplikacja webowa zbudowana w: {out}")
+    if not a.build_only:
+        serve(out, a.port)
+    return 0
+
+
 def cmd_list(a):
     for f in _find_scenarios(a.paths):
         try:
@@ -174,6 +229,7 @@ def main(argv=None):
                    help="nadpisz parametr, np. --set environment.wind.speed=12")
     r.add_argument("--duration", type=float)
     r.add_argument("--perfect-nav", action="store_true", help="nawigacja idealna (bez błędów czujników)")
+    r.add_argument("--vehicle", help="podmień pojazd (np. własny samolot z CAD: aircraft.yaml)")
     r.add_argument("--no-report", action="store_true")
     r.add_argument("--no-viewer", action="store_true")
     r.add_argument("-q", "--quiet", action="store_true")
@@ -183,6 +239,7 @@ def main(argv=None):
     s.add_argument("paths", nargs="*")
     s.add_argument("--jobs", type=int, default=1)
     s.add_argument("--seed", type=int)
+    s.add_argument("--vehicle", help="przetestuj własny pojazd we wszystkich pasujących scenariuszach")
     s.set_defaults(func=cmd_suite)
 
     m = sub.add_parser("montecarlo", help="testy Monte Carlo")
@@ -198,6 +255,17 @@ def main(argv=None):
     t.add_argument("--set", action="append", metavar="KLUCZ=WARTOŚĆ")
     t.add_argument("--out")
     t.set_defaults(func=cmd_tunnel)
+
+    c = sub.add_parser("cad", help="samolot z CAD (STL/OBJ): raport projektowy i model do symulacji")
+    c.add_argument("aircraft", help="plik aircraft.yaml")
+    c.add_argument("--out")
+    c.set_defaults(func=cmd_cad)
+
+    w = sub.add_parser("web", help="zbuduj i uruchom aplikację webową (Pyodide) lokalnie")
+    w.add_argument("--out", default="site")
+    w.add_argument("--port", type=int, default=8000)
+    w.add_argument("--build-only", action="store_true")
+    w.set_defaults(func=cmd_web)
 
     ls = sub.add_parser("list", help="lista scenariuszy")
     ls.add_argument("paths", nargs="*")

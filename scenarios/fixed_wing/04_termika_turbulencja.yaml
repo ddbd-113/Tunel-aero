@@ -32,4 +32,4 @@ criteria:
   mission_complete: true
   max_altitude_error: 25
   max_load_factor: 3.0
-  min_airspeed: 11
+  min_stall_margin: 1.1       # min. IAS >= 1.1 x prędkość przeciągnięcia

@@ -70,6 +70,9 @@ def compute_metrics(log, sim=None, scenario: dict | None = None) -> dict:
             m["landing_error"] = float(math.hypot(d["pn"][-1] - target[0], d["pe"][-1] - target[1]))
     else:
         m["min_airspeed"] = float(np.min(d["ias"][airborne])) if airborne.any() else float(np.min(d["ias"]))
+        vs = getattr(getattr(sim, "ap", None), "m", {}).get("v_stall") if sim is not None else None
+        if vs:
+            m["min_stall_margin"] = m["min_airspeed"] / vs
         m["max_airspeed"] = float(np.max(d["ias"]))
         m["stall_time"] = float(np.sum(d["stall"] > 0.5) * dtl)
         m["max_load_factor"] = float(np.max(np.abs(d["load_factor"])))
@@ -96,6 +99,7 @@ CRITERIA = {
     "max_nav_error": ("max_nav_error", "le"),
     "max_saturation_time": ("saturation_time", "le"),
     "min_airspeed": ("min_airspeed", "ge"),
+    "min_stall_margin": ("min_stall_margin", "ge"),
     "max_airspeed": ("max_airspeed", "le"),
     "max_stall_time": ("stall_time", "le"),
     "max_load_factor": ("max_load_factor", "le"),
@@ -112,7 +116,7 @@ LABELS = {
     "max_energy_wh": "zużyta energia [Wh]", "min_voltage": "min. napięcie pod obciążeniem [V]",
     "max_battery_temp": "maks. temperatura baterii [C]", "max_landing_error": "błąd miejsca lądowania [m]",
     "max_nav_error": "maks. błąd nawigacji [m]", "max_saturation_time": "czas nasycenia silników [s]",
-    "min_airspeed": "min. prędkość IAS [m/s]", "max_airspeed": "maks. prędkość IAS [m/s]",
+    "min_airspeed": "min. prędkość IAS [m/s]", "min_stall_margin": "min. IAS / prędkość przeciągnięcia", "max_airspeed": "maks. prędkość IAS [m/s]",
     "max_stall_time": "czas w przeciągnięciu [s]", "max_load_factor": "maks. przeciążenie [g]",
     "max_altitude_error": "maks. błąd wysokości [m]", "min_flight_time": "czas lotu [s]",
     "max_ice": "maks. oblodzenie [0-1]",

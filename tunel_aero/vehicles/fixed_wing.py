@@ -42,7 +42,8 @@ class FixedWing(Vehicle):
         Jxz = J[3] if len(J) > 3 else 0.0
         inertia = np.array([[Jx, 0, -Jxz], [0, Jy, 0], [-Jxz, 0, Jz]])
         half_b = self.b / 2
-        contact = [[0.45, 0.0, 0.08], [-0.7, 0.0, 0.05], [0.0, half_b, 0.0], [0.0, -half_b, 0.0]]
+        contact = cfg.get("contact_points") or [[0.45, 0.0, 0.08], [-0.7, 0.0, 0.05], [0.0, half_b, 0.0],
+                                                [0.0, -half_b, 0.0]]
         crash = cfg.get("crash", {})
         super().__init__(cfg.get("name", "fixed_wing"), cfg["mass"], inertia, contact,
                          crash_vertical_speed=crash.get("max_vertical_speed", 2.5),
@@ -59,7 +60,8 @@ class FixedWing(Vehicle):
             tau=prop.get("tau", 0.08), rng=rng)
         self.battery = Battery(**cfg.get("battery", {}))
         srv = cfg.get("servos", {})
-        self.servo_limit = math.radians(srv.get("limit_deg", 25.0))
+        lim = srv.get("limit_deg", 25.0)      # jedna wartość lub [lotki, ster wys., ster kier.]
+        self.servo_limit = np.radians(np.broadcast_to(np.asarray(lim, dtype=float), (3,))).copy()
         self.servo_tau = srv.get("tau", 0.04)
         self.servo_rate = math.radians(srv.get("rate_deg_s", 300.0))
         self.delta = np.zeros(3)                 # [lotka, ster wysokości, ster kierunku] [rad]
