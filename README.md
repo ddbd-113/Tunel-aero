@@ -1,6 +1,17 @@
 # Tunel-aero ✈️🚁
 
-**Wirtualne środowisko testowe dla dronów i samolotów bezzałogowych w realistycznych warunkach.**
+**Wirtualne środowisko testowe dla dronów i samolotów bezzałogowych w realistycznych warunkach —
+także dla Twoich własnych konstrukcji zaprojektowanych w CAD.**
+
+[![Otwórz aplikację w przeglądarce](https://img.shields.io/badge/aplikacja-otwórz_w_przeglądarce-1f6fb2)](https://ddbd-113.github.io/Tunel-aero/)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/ddbd-113/Tunel-aero)
+
+- **W przeglądarce (bez instalacji):** <https://ddbd-113.github.io/Tunel-aero/> — wgrywasz pliki STL/OBJ
+  swojego samolotu, dostajesz analizę stateczności i wyważenia, wybierasz warunki i awarie, oglądasz lot w 3D.
+  Python działa w przeglądarce (Pyodide), Twoje pliki nie są nigdzie wysyłane.
+- **W GitHub Codespaces:** przycisk powyżej → pełne środowisko w chmurze z terminalem (`tunel-aero …`),
+  aplikacja otwiera się automatycznie na porcie 8000.
+- **Lokalnie:** `pip install -e .` (instrukcja niżej).
 
 Tunel-aero symuluje lot (6 stopni swobody) wielowirnikowców i samolotów w warunkach, które
 spotyka się w prawdziwym świecie: porywisty wiatr nad miastem, turbulencja, mikroburst z burzy,
@@ -28,15 +39,17 @@ tunel-aero run scenarios/multirotor/07_burza_mikroburst.yaml
 ## Spis treści
 1. [Instalacja](#instalacja)
 2. [Szybki start](#szybki-start)
-3. [Co jest modelowane](#co-jest-modelowane)
-4. [Gotowe scenariusze](#gotowe-scenariusze)
-5. [Własny scenariusz (YAML)](#własny-scenariusz-yaml)
-6. [Własny pojazd](#własny-pojazd)
-7. [Monte Carlo](#monte-carlo)
-8. [Wirtualny tunel aerodynamiczny](#wirtualny-tunel-aerodynamiczny)
-9. [API Pythona i własne regulatory (styl Gymnasium)](#api-pythona-i-własne-regulatory)
-10. [Architektura](#architektura)
-11. [Ograniczenia i wiarygodność](#ograniczenia-i-wiarygodność)
+3. [Własny samolot z CAD](#własny-samolot-z-cad)
+4. [Aplikacja w przeglądarce, GitHub Pages i Codespaces](#aplikacja-w-przeglądarce-github-pages-i-codespaces)
+5. [Co jest modelowane](#co-jest-modelowane)
+6. [Gotowe scenariusze](#gotowe-scenariusze)
+7. [Własny scenariusz (YAML)](#własny-scenariusz-yaml)
+8. [Własny pojazd (parametry)](#własny-pojazd)
+9. [Monte Carlo](#monte-carlo)
+10. [Wirtualny tunel aerodynamiczny](#wirtualny-tunel-aerodynamiczny)
+11. [API Pythona i własne regulatory (styl Gymnasium)](#api-pythona-i-własne-regulatory)
+12. [Architektura](#architektura)
+13. [Ograniczenia i wiarygodność](#ograniczenia-i-wiarygodność)
 
 ---
 
@@ -48,7 +61,7 @@ Wymagany Python ≥ 3.10.
 git clone https://github.com/ddbd-113/Tunel-aero.git
 cd Tunel-aero
 pip install -e ".[dev]"      # numpy, pyyaml, matplotlib (+ pytest)
-pytest -q                    # 41 testów, ~15 s
+pytest -q                    # 54 testy, ~20 s
 ```
 
 Odtwarzacz 3D ładuje bibliotekę three.js z `cdn.jsdelivr.net`, więc przy oglądaniu potrzebny jest internet.
@@ -80,6 +93,98 @@ Wyniki trafiają do `wyniki/<nazwa>/`:
 
 Kod wyjścia `run`/`suite` ≠ 0, gdy test nie spełnił oczekiwań — można go wpiąć w CI
 (przykład: `.github/workflows/tests.yml`).
+
+## Własny samolot z CAD
+
+Projektujesz samolot w CAD (Fusion 360, SolidWorks, Onshape, FreeCAD, Blender…)? Wyeksportuj
+**każdą część jako osobny plik STL** (albo jeden OBJ z nazwanymi obiektami) i opisz ją krótkim plikiem
+`aircraft.yaml`. Tunel-aero sam:
+
+1. **przetnie siatki płaszczyznami** i wyznaczy przekroje skrzydła i usterzenia: cięciwy, rozpiętość,
+   powierzchnię, średnią cięciwę aerodynamiczną, wznios, skos, zaklinowanie, grubość profilu
+   (obsługuje też usterzenie motylkowe V i latające skrzydła z elewonami),
+2. policzy **masę, środek ciężkości i momenty bezwładności** z siatek (bryła lub powłoka) i elementów
+   skupionych (silnik, akumulator, serwa…) — albo przyjmie wartości z Twojego CAD,
+3. wyznaczy **pochodne stateczności metodą siatki wirowej (VLM, jak w AVL/XFLR5)** z wychyleniami
+   sterów, doda wpływ kadłuba (DATCOM/Raymer) i **opór z rzeczywistej powierzchni zwilżonej siatek**,
+4. pokaże **punkt neutralny, zapas stateczności i zalecany zakres środka ciężkości** (w Twoich
+   współrzędnych CAD), prędkość przeciągnięcia, trym, moc w przelocie i ostrzeżenia projektowe,
+5. zbuduje model do symulatora — samolot lata potem wszystkimi scenariuszami z autopilotem,
+   a w odtwarzaczu 3D widać **Twoją siatkę z CAD**.
+
+```bash
+tunel-aero cad examples/moj_samolot/aircraft.yaml          # raport projektu (wyważenie, stateczność, osiągi)
+tunel-aero run scenarios/fixed_wing/02_mikroburst_nisko.yaml --vehicle examples/moj_samolot/aircraft.yaml
+tunel-aero suite scenarios/fixed_wing --vehicle examples/moj_samolot/aircraft.yaml   # wszystkie testy samolotowe
+```
+
+Przykład (`examples/moj_samolot/` — trener 1,4 m, pliki STL wygenerowane skryptem `generuj_stl.py`):
+
+```yaml
+type: cad_aircraft
+name: "Trener 1.4 m"
+units: mm                          # jednostki plików: mm | cm | m | in
+axes: {forward: -x, up: +z}        # gdzie w CAD jest nos i "góra" samolotu
+parts:                             # role: wing | htail | vtail | fuselage | other
+  skrzydlo:   {file: skrzydlo.stl, role: wing, mass: 0.40}
+  usterzenie: {file: ster_wysokosci.stl, role: htail, mass: 0.035}
+  statecznik: {file: statecznik.stl, role: vtail, mass: 0.025}
+  kadlub:     {file: kadlub.stl, role: fuselage, mass: 0.28}
+  # albo jeden plik OBJ:  skrzydlo: {file: "samolot.obj#Skrzydlo", role: wing}
+mass:
+  # total: 1.15                    # masa do lotu; bez mas części rozłoży się po ich powierzchni
+  # cg: [318, 0, 40]               # środek ciężkości z wyważenia lub z CAD
+  # inertia: [0.06, 0.08, 0.13, 0] # Ixx, Iyy, Izz, Ixz [kg m^2] z CAD (domyślnie liczone)
+  components:                      # elementy skupione, pozycje w układzie CAD
+    - {name: silnik,     mass: 0.110, position: [10, 0, 10]}
+    - {name: akumulator, mass: 0.185, position: [60, 0, 5]}
+surfaces:
+  wing:
+    airfoil: {cl_max: 1.3, zero_lift_alpha_deg: -2.1, cm0: -0.05}    # NACA 2412
+    controls: [{type: aileron, span: [0.55, 0.95], chord_fraction: 0.25, max_deg: 20}]
+  htail:
+    controls: [{type: elevator, span: [0, 1], chord_fraction: 0.35, max_deg: 25}]
+  vtail:
+    controls: [{type: rudder, span: [0, 1], chord_fraction: 0.4, max_deg: 25}]
+  # zamiast siatki można podać przekroje: sections: [[x_LE, y, z, cięciwa, skręcenie_deg], ...]
+propulsion: {position: [-20, 0, 10], kv: 1000, diameter_in: 10, pitch_in: 5}
+battery: {cells: 3, capacity_ah: 2.2}
+cruise_speed: 13
+```
+
+**Eksport z CAD — wskazówki:**
+
+| program | eksport | typowe osie (`axes`) |
+|---|---|---|
+| Fusion 360 | prawy klik na bryle → *Save As Mesh* → STL (binarny), jednostki mm | `up: +y` (lub `+z` przy „Z up”) |
+| SolidWorks | *Zapisz jako* → STL, *Opcje* → „zapisz wszystkie części jako osobne pliki” | `up: +y` |
+| Onshape | prawy klik na części → *Export* → STL | `up: +z` |
+| FreeCAD | *Plik → Eksportuj* → STL/OBJ | `up: +z` |
+| Blender | *File → Export → Wavefront OBJ* (obiekty zachowają nazwy) | `up: +z` |
+
+Kierunek nosa (`forward`) zależy od tego, jak narysowałeś samolot. Po analizie sprawdź podgląd 3D —
+strzałka „NOS” musi wskazywać przód. Ważne: części powinny być **zamkniętymi bryłami**; skrzydło może
+być w całości lub jako jedna połówka (zostanie odbite). Lotki, ster wysokości i kierunku nie muszą być
+osobnymi bryłami — ich zakres podajesz w `controls`.
+
+## Aplikacja w przeglądarce, GitHub Pages i Codespaces
+
+Aplikacja webowa (`tunel_aero/web/`) uruchamia **ten sam kod Pythona** w przeglądarce (Pyodide
+w Web Workerze), więc działa jako statyczna strona — bez serwera i bez kosztów:
+
+1. **Pojazd** — wgraj pliki STL/OBJ (role części rozpoznawane z nazw plików, np. `skrzydlo.stl`,
+   `ster_wysokosci.stl`, `statecznik.stl`, `kadlub.stl`), wpisz masy i napęd, kliknij *Analizuj samolot*
+   (albo wybierz gotowy pojazd),
+2. **Warunki testu** — scenariusz bazowy + wiatr, teren, turbulencja, podmuchy, temperatura, wysokość
+   terenu, deszcz, oblodzenie i awarie (GPS, łącze, Pitot, stery, silnik, ogniwo),
+3. **Wyniki** — PASS/FAIL, kryteria, zdarzenia, wykresy i odtwarzacz 3D z Twoją siatką; pobierz
+   `aircraft.yaml`, model dla symulatora, log CSV, scenariusz i odtwarzacz.
+
+| gdzie | jak |
+|---|---|
+| GitHub Pages | workflow `.github/workflows/pages.yml` publikuje stronę przy każdym pushu do domyślnej gałęzi. **Jednorazowo:** *Settings → Pages → Build and deployment → Source: GitHub Actions*, potem *Actions → Strona (GitHub Pages) → Run workflow*. Adres: `https://<użytkownik>.github.io/Tunel-aero/` |
+| GitHub Codespaces | *Code → Codespaces → Create codespace* (lub przycisk na górze). `.devcontainer/` instaluje pakiet i uruchamia aplikację na porcie 8000 |
+| lokalnie | `tunel-aero web` → <http://localhost:8000> (`--build-only --out site` tylko buduje stronę) |
 
 ## Co jest modelowane
 
@@ -132,6 +237,11 @@ Kod wyjścia `run`/`suite` ≠ 0, gdy test nie spełnił oczekiwań — można g
 
 Scenariusze „demonstracyjne” mają `expect_pass: false` — pokazują, **jak i kiedy** pojazd zawodzi.
 `tunel-aero suite` traktuje je jako zgodne z oczekiwaniem, gdy kończą się porażką.
+
+Scenariusze samolotowe domyślnie latają samolotem 3 kg, ale z opcją `--vehicle` testują dowolny samolot
+(także z CAD); prędkość lotu bierze się wtedy z `cruise_speed` pojazdu, a kryterium `min_stall_margin`
+(minimalna IAS / prędkość przeciągnięcia) jest niezależne od wielkości samolotu. Oczekiwane wyniki w tabeli
+dotyczą pojazdu domyślnego — inny samolot może wypaść lepiej lub gorzej i właśnie po to są te testy.
 
 ## Własny scenariusz (YAML)
 
@@ -201,7 +311,8 @@ Samolot: `mission.airspeed` (IAS), `start: {north, east, altitude, heading_deg}`
 Dostępne kryteria: `no_crash`, `mission_complete`, `max_track_error`, `p95_track_error`,
 `mean_track_error`, `max_tilt_deg`, `min_altitude`, `min_battery_soc`, `max_energy_wh`, `min_voltage`,
 `max_battery_temp`, `max_landing_error`, `max_nav_error`, `max_saturation_time`, `min_airspeed`,
-`max_airspeed`, `max_stall_time`, `max_load_factor`, `max_altitude_error`, `min_flight_time`, `max_ice`.
+`min_stall_margin`, `max_airspeed`, `max_stall_time`, `max_load_factor`, `max_altitude_error`,
+`min_flight_time`, `max_ice`.
 
 ## Własny pojazd
 
@@ -280,6 +391,8 @@ Działający przykład: `python examples/wlasny_regulator.py`.
 
 ```text
 tunel_aero/
+  cad/               import z CAD: siatki STL/OBJ, przekroje, masa, VLM, raport projektu
+  web/ webapi.py webapp.py   aplikacja w przeglądarce (Pyodide) i jej budowa
   atmosphere.py      ISA + temperatura, ciśnienie, wilgotność
   wind.py            profil wiatru (Eurokod), Dryden, podmuchy, mikroburst, termika
   weather.py         deszcz, oblodzenie
@@ -311,6 +424,10 @@ a nie do certyfikacji. Warto wiedzieć:
 - Estymator nawigacji jest modelem błędów („prawda + realistyczny błąd”), a nie pełnym EKF.
   Własny filtr możesz testować na surowych czujnikach przez `FlightEnv`.
 - Teren jest płaski (bez przeszkód i budynków — ich wpływ ujmuje szorstkość terenu i turbulencja).
+- Model samolotu z CAD to VLM (cienkie powierzchnie, opływ potencjalny) z poprawkami półempirycznymi:
+  dobrze oddaje stateczność, sterowność i trym, gorzej — opór i przeciągnięcie (zależą od profilu
+  i liczby Reynoldsa, które podajesz w `airfoil`). Pierwsze loty prawdziwego samolotu i tak zaczynaj
+  od sprawdzenia wyważenia w zalecanym zakresie.
 - Brak podwozia/lądowania samolotu oraz aerodynamiki niestacjonarnej i aeroelastyczności.
 
 Kolejny krok dla pełnej weryfikacji oprogramowania pokładowego: uruchomienie tych samych warunków
@@ -321,6 +438,6 @@ mostem MAVLink.
 
 ```bash
 pytest -q                     # fizyka (ISA, wariancja Drydena, ciągłość mikroburstu, bateria...),
-                              # loty kontrolne, scenariusze dymne, CLI, API
+                              # VLM vs teoria, siatki CAD, loty kontrolne, scenariusze, CLI, API, strona
 tunel-aero suite --jobs 4     # pełne scenariusze z kryteriami (~75 s)
 ```

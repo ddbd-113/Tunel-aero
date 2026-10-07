@@ -146,11 +146,15 @@ class Simulation:
             return False
         return True
 
-    def run(self, progress: bool = False) -> FlightLog:
+    def run(self, progress: bool = False, callback=None) -> FlightLog:
+        """progress - pasek w konsoli; callback(ułamek 0..1) - np. pasek postępu w przeglądarce."""
         wall = time.time()
         n_total = int(self.duration / self.dt)
+        every = max(1, n_total // 100)
         last_pct = -1
         while self.step():
+            if callback is not None and self.step_i % every == 0:
+                callback(min(0.99, self.step_i / n_total))
             if progress:
                 pct = int(100 * self.step_i / n_total)
                 if pct // 10 != last_pct // 10:

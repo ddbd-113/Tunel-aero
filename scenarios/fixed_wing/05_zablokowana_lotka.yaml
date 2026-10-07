@@ -1,4 +1,4 @@
-name: "Samolot 3 kg - zablokowana lotka, rekonfiguracja na ster kierunku"
+name: "Samolot - zablokowana lotka, rekonfiguracja na ster kierunku"
 description: >
   W 40 s lotka zacina się w położeniu +3 deg (moment przechylający w prawo). Autopilot
   wykrywa awarię po 1.5 s i przechodzi na sterowanie przechyleniem sterem kierunku

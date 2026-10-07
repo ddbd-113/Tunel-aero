@@ -1,0 +1,23 @@
+{
+  "name": "Tunel-aero",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "postCreateCommand": "pip install -e '.[dev]'",
+  "postAttachCommand": {
+    "aplikacja": "tunel-aero web --port 8000"
+  },
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": {
+      "label": "Tunel-aero (aplikacja w przeglądarce)",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "customizations": {
+    "codespaces": {
+      "openFiles": ["README.md", "examples/moj_samolot/aircraft.yaml"]
+    },
+    "vscode": {
+      "extensions": ["ms-python.python", "redhat.vscode-yaml"]
+    }
+  }
+}

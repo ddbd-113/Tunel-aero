@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tunel-aero"
-version = "0.1.0"
-description = "Wirtualne środowisko testowe dla dronów i samolotów w realistycznych warunkach (wiatr, turbulencja, mikroburst, oblodzenie, mróz, awarie)"
+version = "0.2.0"
+description = "Wirtualne środowisko testowe dla dronów i samolotów (także własnych z CAD) w realistycznych warunkach: wiatr, turbulencja, mikroburst, oblodzenie, mróz, awarie"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -18,7 +18,10 @@ dev = ["pytest>=7"]
 tunel-aero = "tunel_aero.cli:main"
 
 [tool.setuptools]
-packages = ["tunel_aero", "tunel_aero.vehicles", "tunel_aero.control"]
+packages = ["tunel_aero", "tunel_aero.vehicles", "tunel_aero.control", "tunel_aero.cad"]
+
+[tool.setuptools.package-data]
+tunel_aero = ["web/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

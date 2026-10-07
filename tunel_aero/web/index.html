@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tunel-aero</title>
+<meta name="description" content="Wirtualne testy samolotów i dronów w realistycznych warunkach - działa w przeglądarce">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M6 36 L58 22 L58 28 L36 36 L44 54 L38 54 L26 38 L10 42 Z' fill='%231f6fb2'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css?v=__VERSION__">
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M6 36 L58 22 L58 28 L36 36 L44 54 L38 54 L26 38 L10 42 Z"/></svg>
+    <div><h1>Tunel-aero</h1><p>wirtualne testy samolotów i dronów w realnych warunkach</p></div>
+  </div>
+  <div id="rt" class="rt busy"><span class="dot"></span><span id="rt-text">Uruchamianie…</span></div>
+</header>
+
+<nav class="steps" role="tablist">
+  <button class="step active" data-step="1">1. Pojazd</button>
+  <button class="step" data-step="2">2. Warunki testu</button>
+  <button class="step" data-step="3" id="tab3" disabled>3. Wyniki</button>
+</nav>
+
+<main>
+<!-- =============================== KROK 1 =============================== -->
+<section id="s1" class="panel active">
+  <div class="seg" role="radiogroup">
+    <label><input type="radio" name="vmode" value="cad" checked> Mój samolot z CAD</label>
+    <label><input type="radio" name="vmode" value="preset"> Gotowy pojazd</label>
+  </div>
+
+  <div id="preset-box" class="card hidden">
+    <label class="fld">Pojazd <select id="preset"></select></label>
+    <p class="muted">Gotowe modele: quadrocopter X500, heksakopter, mini dron 249 g, samolot 3 kg.</p>
+  </div>
+
+  <div id="cad-box">
+    <div class="card">
+      <div class="drop" id="drop">
+        <input type="file" id="files" multiple accept=".stl,.obj,.yaml,.yml">
+        <p><b>Upuść tutaj pliki z CAD</b> (STL lub OBJ - każda część osobno: skrzydło, usterzenie poziome,
+          pionowe, kadłub) lub kliknij, aby wybrać. Możesz dodać też gotowy <code>aircraft.yaml</code>.</p>
+        <p class="muted">Pliki nie opuszczają Twojego komputera - wszystko liczy się w przeglądarce.</p>
+      </div>
+      <div class="row">
+        <button id="load-example" class="ghost">Wczytaj przykład (trener 1,4 m)</button>
+        <button id="clear-cad" class="ghost">Wyczyść</button>
+        <span class="grow"></span>
+        <button id="save-yaml" class="ghost">Zapisz aircraft.yaml</button>
+      </div>
+      <table class="tbl" id="parts-tbl">
+        <thead><tr><th>plik</th><th>rola</th><th>masa [kg]</th><th>powłoka</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Geometria z CAD</h3>
+        <label class="fld">Nazwa <input data-path="name" type="text"></label>
+        <div class="row3">
+          <label class="fld">Jednostki <select data-path="units"><option>mm</option><option>cm</option><option>m</option><option>in</option></select></label>
+          <label class="fld">Nos w kierunku <select data-path="axes.forward"><option>-x</option><option>+x</option><option>-y</option><option>+y</option><option>-z</option><option>+z</option></select></label>
+          <label class="fld">Góra samolotu <select data-path="axes.up"><option>+z</option><option>-z</option><option>+y</option><option>-y</option><option>+x</option><option>-x</option></select></label>
+        </div>
+        <p class="muted small">Typowo: Onshape/AVL/XFLR5 - nos -x lub +x, góra +z; Fusion 360/SolidWorks - góra +y.
+          Po analizie sprawdź podgląd 3D: strzałka „nos” musi wskazywać przód samolotu.</p>
+        <h3>Profil skrzydła</h3>
+        <div class="row3">
+          <label class="fld">CL max <input data-path="surfaces.wing.airfoil.cl_max" type="number" step="0.05"></label>
+          <label class="fld">α zerowej siły nośnej [°] <input data-path="surfaces.wing.airfoil.zero_lift_alpha_deg" type="number" step="0.1"></label>
+          <label class="fld">Cm0 profilu <input data-path="surfaces.wing.airfoil.cm0" type="number" step="0.01"></label>
+        </div>
+        <p class="muted small">NACA 2412: CLmax 1,3, α0 −2,1°, Cm0 −0,05 · Clark Y: 1,3, −3,5°, −0,08 · profil symetryczny: 1,1, 0°, 0.</p>
+      </div>
+
+      <div class="card">
+        <h3>Masa i wyważenie</h3>
+        <div class="row3">
+          <label class="fld">Masa całkowita [kg] <input data-path="mass.total" type="number" step="0.01" placeholder="z części"></label>
+          <label class="fld">Środek ciężkości x <input data-path="mass.cg.0" type="number" placeholder="liczony"></label>
+          <label class="fld">z <input data-path="mass.cg.2" type="number" placeholder="liczony"></label>
+        </div>
+        <p class="muted small">Środek ciężkości w układzie CAD (w jednostkach plików). Puste = liczony z mas części i elementów.</p>
+        <table class="tbl" id="comp-tbl">
+          <thead><tr><th>element</th><th>masa [kg]</th><th>x</th><th>y</th><th>z</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <button id="add-comp" class="ghost small">+ element (silnik, akumulator, serwo…)</button>
+        <h3>Napęd</h3>
+        <div class="row4">
+          <label class="fld">KV <input data-path="propulsion.kv" type="number"></label>
+          <label class="fld">śmigło ø ["] <input data-path="propulsion.diameter_in" type="number" step="0.5"></label>
+          <label class="fld">skok ["] <input data-path="propulsion.pitch_in" type="number" step="0.5"></label>
+          <label class="fld">ogniwa S <input data-path="battery.cells" type="number"></label>
+          <label class="fld">pojemność [Ah] <input data-path="battery.capacity_ah" type="number" step="0.1"></label>
+          <label class="fld">prędkość przelotowa [m/s] <input data-path="cruise_speed" type="number" step="0.5" placeholder="auto"></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <button id="analyze" class="primary" disabled>Analizuj samolot</button>
+      <span id="an-status" class="muted"></span>
+    </div>
+
+    <div id="analysis" class="hidden">
+      <div class="grid2">
+        <div class="card"><h3>Podgląd 3D</h3><div id="preview" class="preview"></div>
+          <p class="muted small">⚪ środek ciężkości · 🔴 punkt neutralny · zielony pas: zalecany zakres CG · strzałka: nos</p></div>
+        <div class="card"><h3>Kontrola projektu</h3><div id="checks"></div><div id="summary" class="kvs"></div></div>
+      </div>
+      <details class="card"><summary>Pochodne stateczności i opór</summary><div id="derivs"></div></details>
+      <div class="row"><button id="dl-vehicle" class="ghost">Pobierz model dla symulatora (YAML)</button>
+        <span class="grow"></span><button class="primary" id="to-step2">Dalej: warunki testu →</button></div>
+    </div>
+  </div>
+  <div id="preset-next" class="row hidden"><span class="grow"></span><button class="primary" id="to-step2b">Dalej: warunki testu →</button></div>
+</section>
+
+<!-- =============================== KROK 2 =============================== -->
+<section id="s2" class="panel">
+  <div class="card">
+    <label class="fld">Scenariusz bazowy <select id="scenario"></select></label>
+    <p id="sc-desc" class="muted"></p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Wiatr i turbulencja</h3>
+      <div class="row3">
+        <label class="fld">Prędkość [m/s] <input id="c-wind" type="number" step="0.5" min="0"></label>
+        <label class="fld">Kierunek (skąd) [°] <input id="c-dir" type="number" step="5"></label>
+        <label class="fld">Teren <select id="c-terrain">
+          <option value="water">woda</option><option value="snow">śnieg / lotnisko</option><option value="open">teren otwarty</option>
+          <option value="farmland">pola</option><option value="suburbs">przedmieścia</option><option value="forest">las</option>
+          <option value="city">miasto</option></select></label>
+      </div>
+      <div class="row3">
+        <label class="fld">Turbulencja <select id="c-turb">
+          <option value="auto">auto (z wiatru i terenu)</option><option value="none">brak</option><option value="light">lekka</option>
+          <option value="moderate">umiarkowana</option><option value="severe">silna</option></select></label>
+        <label class="fld">Podmuchy / min <input id="c-gusts" type="number" min="0" step="1" value="0"></label>
+        <label class="fld">Maks. podmuch [m/s] <input id="c-gustmax" type="number" min="0" step="1" value="6"></label>
+      </div>
+      <p class="muted small">Prędkość wiatru jak w prognozie (10 m nad terenem otwartym); wyżej wiatr rośnie wg profilu terenu.</p>
+    </div>
+    <div class="card">
+      <h3>Atmosfera i pogoda</h3>
+      <div class="row3">
+        <label class="fld">Temperatura [°C] <input id="c-temp" type="number" step="1"></label>
+        <label class="fld">Wysokość terenu [m n.p.m.] <input id="c-elev" type="number" step="50"></label>
+        <label class="fld">Wilgotność [%] <input id="c-hum" type="number" min="0" max="100" step="5"></label>
+      </div>
+      <div class="row3">
+        <label class="fld">Deszcz [mm/h] <input id="c-rain" type="number" min="0" step="1"></label>
+        <label class="fld">Oblodzenie: woda w chmurze [g/m³] <input id="c-lwc" type="number" min="0" step="0.1"></label>
+        <label class="fld">Chmura od-do [m] <span class="pair"><input id="c-cb" type="number" step="50"><input id="c-ct" type="number" step="50"></span></label>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Awarie</h3>
+    <div id="fails"></div>
+    <div class="row">
+      <select id="f-type">
+        <option value="gps_loss">utrata GPS</option><option value="gps_spoofing">spoofing GPS</option>
+        <option value="link_loss">utrata łącza</option><option value="mag_interference">zakłócenie magnetometru</option>
+        <option value="pitot_blocked">zatkana rurka Pitota</option><option value="control_surface">zablokowana lotka</option>
+        <option value="motor">awaria silnika</option><option value="battery_cell">uszkodzone ogniwo</option>
+      </select>
+      <label class="inline">od t = <input id="f-t" type="number" value="40" step="5" class="w5"> s</label>
+      <label class="inline">przez <input id="f-dur" type="number" value="" step="5" class="w5" placeholder="∞"> s</label>
+      <button id="f-add" class="ghost small">+ dodaj</button>
+    </div>
+  </div>
+  <div class="card row">
+    <label class="inline">Czas symulacji <input id="c-dur" type="number" min="10" step="10" class="w6"> s</label>
+    <label class="inline">Ziarno losowe <input id="c-seed" type="number" class="w5"></label>
+    <label class="inline"><input id="c-perfect" type="checkbox"> idealna nawigacja</label>
+    <span class="grow"></span>
+    <button id="run" class="primary" disabled>Uruchom test</button>
+  </div>
+  <div id="prog" class="hidden card"><div class="bar"><div id="prog-bar"></div></div><span id="prog-text"></span>
+    <button id="cancel" class="ghost small">Przerwij</button></div>
+</section>
+
+<!-- =============================== KROK 3 =============================== -->
+<section id="s3" class="panel">
+  <div class="card verdict"><div id="verdict"></div></div>
+  <div class="grid2">
+    <div class="card"><h3>Kryteria</h3><table class="tbl" id="crit"></table></div>
+    <div class="card"><h3>Zdarzenia</h3><ul id="events" class="ev"></ul></div>
+  </div>
+  <div class="card"><h3>Odtwarzacz 3D</h3><iframe id="replay" title="Odtwarzacz lotu"></iframe>
+    <div class="row"><button id="dl-replay" class="ghost small">Pobierz odtwarzacz (HTML)</button>
+      <button id="dl-csv" class="ghost small">Pobierz log (CSV)</button>
+      <button id="dl-sc" class="ghost small">Pobierz scenariusz (YAML)</button></div></div>
+  <div id="kvs" class="kvs"></div>
+  <div class="charts" id="charts"></div>
+</section>
+</main>
+<footer>Tunel-aero · symulacja 6-DOF, VLM, ISA, Dryden, Eurokod · Python w przeglądarce (Pyodide) ·
+  <a href="https://github.com/ddbd-113/Tunel-aero">kod źródłowy</a></footer>
+<script src="app.js?v=__VERSION__"></script>
+</body>
+</html>

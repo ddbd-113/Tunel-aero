@@ -39,6 +39,13 @@ def _frames(log, rate: float = 20.0) -> dict:
 
 
 def write_replay(result, path) -> Path:
+    p = Path(path)
+    p.write_text(replay_html(result), encoding="utf-8")
+    return p
+
+
+def replay_html(result) -> str:
+    """Kompletny dokument HTML odtwarzacza (do zapisu lub wyświetlenia w ramce)."""
     sc = result.scenario
     wind = ((sc.get("environment", {}) or {}).get("wind", {}) or {})
     wps = []
@@ -64,11 +71,9 @@ def write_replay(result, path) -> Path:
     if vis is not None:   # siatka z CAD (układ ciała FRD, metry, względem środka ciężkości)
         data["mesh"] = {"v": [round(float(x), 4) for x in np.asarray(vis["v"]).reshape(-1)],
                         "f": [int(i) for i in np.asarray(vis["f"]).reshape(-1)]}
-    html = TEMPLATE.replace("__DATA__", json.dumps(data, ensure_ascii=False, separators=(",", ":")))
-    html = html.replace("__TITLE__", result.name.replace("<", ""))
-    p = Path(path)
-    p.write_text(html, encoding="utf-8")
-    return p
+    html = TEMPLATE.replace("__DATA__", json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+                            .replace("</", "<\\/"))
+    return html.replace("__TITLE__", result.name.replace("<", ""))
 
 
 TEMPLATE = r"""<!doctype html>

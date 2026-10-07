@@ -1,4 +1,4 @@
-name: "Samolot 3 kg - utrata łącza i powrót automatyczny"
+name: "Samolot - utrata łącza i powrót automatyczny"
 description: >
   W 60 s zrywa się łącze RC/telemetrii (zasięg, zakłócenia). Failsafe: przerwanie
   misji, powrót nad punkt startu i krążenie. Wiatr 7 m/s.

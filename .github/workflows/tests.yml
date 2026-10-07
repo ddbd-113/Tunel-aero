@@ -20,3 +20,7 @@ jobs:
         run: pytest -q
       - name: Zestaw scenariuszy (regresja zachowania)
         run: tunel-aero suite --jobs 2
+      - name: Samolot z CAD w scenariuszach samolotowych
+        run: tunel-aero cad examples/moj_samolot/aircraft.yaml --out wyniki/cad
+      - name: Budowa aplikacji webowej
+        run: tunel-aero web --build-only --out _site
